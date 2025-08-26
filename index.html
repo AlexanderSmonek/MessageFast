@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MessageFast - Чат для друзей</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100vh; overflow: hidden; }
+        .container { height: 100vh; display: flex; flex-direction: column; }
+        .header { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.2); }
+        .header h1 { color: white; font-size: 1.5rem; font-weight: 600; }
+        .user-info { display: flex; align-items: center; gap: 1rem; color: white; }
+        button { background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 25px; cursor: pointer; transition: all 0.3s ease; font-size: 1rem; }
+        button:hover { background: rgba(255, 255, 255, 0.3); }
+        .login-form { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 2rem; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.2); text-align: center; min-width: 300px; }
+        .login-form h2 { color: white; margin-bottom: 1.5rem; font-weight: 400; }
+        input { width: 100%; padding: 0.8rem; border: none; border-radius: 10px; background: rgba(255, 255, 255, 0.9); margin-bottom: 1rem; font-size: 1rem; outline: none; }
+        .login-screen { flex: 1; display: flex; justify-content: center; align-items: center; }
+        .chat-container { flex: 1; display: flex; flex-direction: column; padding: 1rem; }
+        .messages { flex: 1; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 15px; padding: 1rem; margin-bottom: 1rem; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .message { background: rgba(255, 255, 255, 0.2); margin-bottom: 0.5rem; padding: 0.8rem; border-radius: 10px; color: white; animation: fadeIn 0.3s ease; }
+        .message.own { background: rgba(76, 175, 80, 0.3); margin-left: 20%; }
+        .message .username { font-weight: bold; font-size: 0.9rem; margin-bottom: 0.3rem; }
+        .message .time { font-size: 0.7rem; opacity: 0.7; float: right; }
+        .input-area { display: flex; gap: 0.5rem; }
+        #message-input { flex: 1; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 768px) { .header { padding: 1rem; } .header h1 { font-size: 1.2rem; } .chat-container { padding: 0.5rem; } .message.own { margin-left: 10%; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>MessageFast 💬</h1>
+            <div class="user-info">
+                <span id="username">Пользователь</span>
+                <button id="logout-btn">Выйти</button>
+            </div>
+        </header>
+
+        <div class="login-screen" id="login-screen">
+            <div class="login-form">
+                <h2>Добро пожаловать в чат!</h2>
+                <input type="text" id="username-input" placeholder="Введите ваше имя">
+                <button id="login-btn">Войти в чат</button>
+            </div>
+        </div>
+
+        <div class="chat-container" id="chat-container" style="display: none;">
+            <div class="messages" id="messages"></div>
+            <div class="input-area">
+                <input type="text" id="message-input" placeholder="Введите сообщение...">
+                <button id="send-btn">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class MessageFast {
+            constructor() {
+                this.currentUser = null;
+                this.messages = [];
+                this.init();
+            }
+
+            init() {
+                document.getElementById('login-btn').onclick = () => this.login();
+                document.getElementById('logout-btn').onclick = () => this.logout();
+                document.getElementById('send-btn').onclick = () => this.sendMessage();
+                document.getElementById('username-input').onkeypress = (e) => e.key === 'Enter' && this.login();
+                document.getElementById('message-input').onkeypress = (e) => e.key === 'Enter' && this.sendMessage();
+                
+                this.loadData();
+                setInterval(() => this.loadData(), 3000);
+            }
+
+            login() {
+                const name = document.getElementById('username-input').value.trim();
+                if (!name) return alert('Введите имя');
+                this.currentUser = name;
+                localStorage.setItem('mf_user', name);
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('chat-container').style.display = 'flex';
+                document.getElementById('username').textContent = name;
+                document.getElementById('message-input').focus();
+            }
+
+            logout() {
+                localStorage.removeItem('mf_user');
+                location.reload();
+            }
+
+            sendMessage() {
+                const text = document.getElementById('message-input').value.trim();
+                if (!text) return;
+                
+                const msg = {
+                    id: Date.now(),
+                    user: this.currentUser,
+                    text: text,
+                    time: new Date().toISOString()
+                };
+                
+                this.messages.push(msg);
+                localStorage.setItem('mf_messages', JSON.stringify(this.messages));
+                document.getElementById('message-input').value = '';
+                this.render();
+            }
+
+            loadData() {
+                const saved = localStorage.getItem('mf_messages');
+                if (saved) {
+                    this.messages = JSON.parse(saved);
+                    this.render();
+                }
+                
+                const user = localStorage.getItem('mf_user');
+                if (user && !this.currentUser) {
+                    this.currentUser = user;
+                    document.getElementById('login-screen').style.display = 'none';
+                    document.getElementById('chat-container').style.display = 'flex';
+                    document.getElementById('username').textContent = user;
+                }
+            }
+
+            render() {
+                const container = document.getElementById('messages');
+                container.innerHTML = '';
+                
+                this.messages.forEach(msg => {
+                    const div = document.createElement('div');
+                    div.className = `message ${msg.user === this.currentUser ? 'own' : ''}`;
+                    const time = new Date(msg.time).toLocaleTimeString('ru', {hour: '2-digit', minute: '2-digit'});
+                    div.innerHTML = `
+                        <div class="username">${msg.user}</div>
+                        <div class="time">${time}</div>
+                        <div>${msg.text}</div>
+                    `;
+                    container.appendChild(div);
+                });
+                
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        new MessageFast();
+    </script>
+</body>
+</html>

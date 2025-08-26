@@ -70,10 +70,14 @@
             }
 
             init() {
-                document.getElementById('login-btn').onclick = () => this.login();
-                document.getElementById('send-btn').onclick = () => this.sendMessage();
-                document.getElementById('username-input').onkeypress = (e) => e.key === 'Enter' && this.login();
-                document.getElementById('message-input').onkeypress = (e) => e.key === 'Enter' && this.sendMessage();
+                document.getElementById('login-btn').addEventListener('click', () => this.login());
+                document.getElementById('send-btn').addEventListener('click', () => this.sendMessage());
+                document.getElementById('username-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.login();
+                });
+                document.getElementById('message-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
                 
                 document.getElementById('username-input').focus();
                 this.loadMessages();
@@ -82,7 +86,10 @@
 
             login() {
                 const name = document.getElementById('username-input').value.trim();
-                if (!name) return alert('Введите имя');
+                if (!name) {
+                    alert('Введите имя');
+                    return;
+                }
                 
                 this.currentUser = name;
                 document.getElementById('login-screen').style.display = 'none';
@@ -93,7 +100,7 @@
 
             async sendMessage() {
                 const text = document.getElementById('message-input').value.trim();
-                if (!text) return;
+                if (!text || !this.currentUser) return;
 
                 const message = {
                     user: this.currentUser,
@@ -162,6 +169,3 @@
     </script>
 </body>
 </html>
-
-
-

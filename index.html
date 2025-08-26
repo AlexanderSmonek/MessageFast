@@ -56,12 +56,11 @@
     </div>
 
     <script>
-        const FIREBASE_URL = 'https://messagefast-2024-default-rtdb.europe-west1.firebasedatabase.app';
-        
         class VKStyleChat {
             constructor() {
                 this.currentUser = null;
                 this.messages = [];
+                this.storageKey = 'messagefast_global_chat';
                 this.init();
             }
 
@@ -75,8 +74,9 @@
                     if (e.key === 'Enter') this.sendMessage();
                 });
                 
-                // Фокус на поле ввода имени
                 document.getElementById('username-input').focus();
+                this.loadMessages();
+                this.startPolling();
             }
 
             login() {
@@ -91,14 +91,12 @@
                 document.getElementById('chat-container').style.display = 'flex';
                 document.getElementById('username-display').textContent = name;
                 document.getElementById('message-input').focus();
-                
-                this.loadMessages();
-                this.startPolling();
+                this.render();
             }
 
-            async sendMessage() {
+            sendMessage() {
                 const text = document.getElementById('message-input').value.trim();
-                if (!text) return;
+                if (!text || !this.currentUser) return;
 
                 const message = {
                     user: this.currentUser,
@@ -107,36 +105,30 @@
                     id: Date.now() + Math.random()
                 };
 
-                try {
-                    await fetch(`${FIREBASE_URL}/messages.json`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(message)
-                    });
-                } catch (error) {
-                    // Fallback
-                    this.messages.push(message);
-                    localStorage.setItem('vk_messages', JSON.stringify(this.messages));
-                    this.render();
-                }
-                
+                this.messages.push(message);
+                localStorage.setItem(this.storageKey, JSON.stringify(this.messages));
                 document.getElementById('message-input').value = '';
-            }
-
-            async loadMessages() {
-                try {
-                    const response = await fetch(`${FIREBASE_URL}/messages.json`);
-                    const data = await response.json();
-                    this.messages = data ? Object.values(data).sort((a, b) => a.time - b.time) : [];
-                } catch (error) {
-                    const saved = localStorage.getItem('vk_messages');
-                    this.messages = saved ? JSON.parse(saved) : [];
-                }
                 this.render();
             }
 
+            loadMessages() {
+                const saved = localStorage.getItem(this.storageKey);
+                if (saved) {
+                    this.messages = JSON.parse(saved);
+                }
+            }
+
             startPolling() {
-                setInterval(() => this.loadMessages(), 3000);
+                setInterval(() => {
+                    const saved = localStorage.getItem(this.storageKey);
+                    if (saved) {
+                        const newMessages = JSON.parse(saved);
+                        if (newMessages.length !== this.messages.length) {
+                            this.messages = newMessages;
+                            this.render();
+                        }
+                    }
+                }, 2000);
             }
 
             render() {

@@ -12,10 +12,10 @@
         .login-screen { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
         .login-form { background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 12px; width: 100%; max-width: 300px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         .login-form h2 { color: #2c5aa0; margin-bottom: 1.5rem; text-align: center; font-size: 20px; }
-        input { width: 100%; padding: 12px; border: 1px solid #d3d9de; border-radius: 8px; font-size: 16px; margin-bottom: 1rem; outline: none; }
-        input:focus { border-color: #4986cc; }
-        button { width: 100%; padding: 12px; background: #4986cc; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
-        button:hover { background: #3c74b9; }
+        .login-form input { width: 100%; padding: 12px; border: 1px solid #d3d9de; border-radius: 8px; font-size: 16px; margin-bottom: 1rem; outline: none; }
+        .login-form input:focus { border-color: #4986cc; }
+        .login-form button { width: 100%; padding: 12px; background: #4986cc; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .login-form button:hover { background: #3c74b9; }
         .chat-container { flex: 1; display: flex; flex-direction: column; background: #4986cc; }
         .messages { flex: 1; padding: 1rem; overflow-y: auto; background: #f7f8fa; }
         .message { margin-bottom: 1rem; display: flex; }
@@ -25,10 +25,11 @@
         .message-header { font-size: 12px; font-weight: 500; margin-bottom: 2px; color: #2c5aa0; }
         .message.own .message-header { color: rgba(255,255,255,0.8); }
         .message-time { font-size: 11px; opacity: 0.6; margin-top: 2px; }
-        .input-area { padding: 1rem; background: white; border-top: 1px solid #e7e8ec; position: relative; }
+        .input-area { padding: 1rem; background: white; border-top: 1px solid #e7e8ec; }
         .input-wrapper { position: relative; display: flex; align-items: center; }
-        #message-input { width: 100%; padding: 12px 50px 12px 16px; border: 1px solid #d3d9de; border-radius: 25px; outline: none; font-size: 16px; resize: none; }
-        #send-btn { position: absolute; right: 8px; width: 36px; height: 36px; background: #4986cc; color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        #message-input { width: 100%; padding: 12px 50px 12px 16px; border: 1px solid #d3d9de; border-radius: 25px; outline: none; font-size: 16px; background: white; }
+        #message-input:focus { border-color: #4986cc; }
+        #send-btn { position: absolute; right: 6px; width: 32px; height: 32px; background: #4986cc; color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; }
         #send-btn:hover { background: #3c74b9; }
         .user-info { background: #f0f2f5; padding: 8px 1rem; font-size: 14px; color: #626d7a; }
     </style>
@@ -40,7 +41,7 @@
         <div class="login-screen" id="login-screen">
             <div class="login-form">
                 <h2>Войти в чат</h2>
-                <input type="text" id="username-input" placeholder="Введите ваше имя" autocomplete="off">
+                <input type="text" id="username-input" placeholder="Введите ваше имя">
                 <button id="login-btn">Войти</button>
             </div>
         </div>
@@ -52,7 +53,7 @@
             <div class="messages" id="messages"></div>
             <div class="input-area">
                 <div class="input-wrapper">
-                    <input type="text" id="message-input" placeholder="Написать сообщение..." autocomplete="off">
+                    <input type="text" id="message-input" placeholder="Написать сообщение...">
                     <button id="send-btn">→</button>
                 </div>
             </div>
@@ -69,10 +70,14 @@
             }
 
             init() {
-                document.getElementById('login-btn').onclick = () => this.login();
-                document.getElementById('send-btn').onclick = () => this.sendMessage();
-                document.getElementById('username-input').onkeypress = (e) => e.key === 'Enter' && this.login();
-                document.getElementById('message-input').onkeypress = (e) => e.key === 'Enter' && this.sendMessage();
+                document.getElementById('login-btn').addEventListener('click', () => this.login());
+                document.getElementById('send-btn').addEventListener('click', () => this.sendMessage());
+                document.getElementById('username-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.login();
+                });
+                document.getElementById('message-input').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
                 
                 document.getElementById('username-input').focus();
                 this.loadMessages();
@@ -81,7 +86,10 @@
 
             login() {
                 const name = document.getElementById('username-input').value.trim();
-                if (!name) return alert('Введите имя');
+                if (!name) {
+                    alert('Введите имя');
+                    return;
+                }
                 
                 this.currentUser = name;
                 document.getElementById('login-screen').style.display = 'none';
@@ -93,7 +101,7 @@
 
             sendMessage() {
                 const text = document.getElementById('message-input').value.trim();
-                if (!text) return;
+                if (!text || !this.currentUser) return;
 
                 const message = {
                     user: this.currentUser,
@@ -150,4 +158,5 @@
     </script>
 </body>
 </html>
+
 

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -56,79 +57,73 @@
     </div>
 
     <script>
-        class VKStyleChat {
+        class MessageFast {
             constructor() {
                 this.currentUser = null;
                 this.messages = [];
-                this.storageKey = 'messagefast_global_chat';
+                this.apiUrl = 'https://api.jsonbin.io/v3/b/676b8e8ead19ca34f8d4c123';
+                this.apiKey = '$2a$10$Vq8rGxJzJzJzJzJzJzJzJu';
                 this.init();
             }
 
             init() {
-                document.getElementById('login-btn').addEventListener('click', () => this.login());
-                document.getElementById('send-btn').addEventListener('click', () => this.sendMessage());
-                document.getElementById('username-input').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.login();
-                });
-                document.getElementById('message-input').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.sendMessage();
-                });
+                document.getElementById('login-btn').onclick = () => this.login();
+                document.getElementById('send-btn').onclick = () => this.sendMessage();
+                document.getElementById('username-input').onkeypress = (e) => e.key === 'Enter' && this.login();
+                document.getElementById('message-input').onkeypress = (e) => e.key === 'Enter' && this.sendMessage();
                 
                 document.getElementById('username-input').focus();
                 this.loadMessages();
-                this.startPolling();
+                setInterval(() => this.loadMessages(), 3000);
             }
 
             login() {
                 const name = document.getElementById('username-input').value.trim();
-                if (!name) {
-                    alert('Введите имя');
-                    return;
-                }
+                if (!name) return alert('Введите имя');
                 
                 this.currentUser = name;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('chat-container').style.display = 'flex';
                 document.getElementById('username-display').textContent = name;
                 document.getElementById('message-input').focus();
-                this.render();
             }
 
-            sendMessage() {
+            async sendMessage() {
                 const text = document.getElementById('message-input').value.trim();
-                if (!text || !this.currentUser) return;
+                if (!text) return;
 
                 const message = {
                     user: this.currentUser,
                     text: text,
-                    time: Date.now(),
-                    id: Date.now() + Math.random()
+                    time: Date.now()
                 };
 
                 this.messages.push(message);
-                localStorage.setItem(this.storageKey, JSON.stringify(this.messages));
+                
+                try {
+                    await fetch(this.apiUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ messages: this.messages })
+                    });
+                } catch (error) {
+                    localStorage.setItem('messages', JSON.stringify(this.messages));
+                }
+                
                 document.getElementById('message-input').value = '';
                 this.render();
             }
 
-            loadMessages() {
-                const saved = localStorage.getItem(this.storageKey);
-                if (saved) {
-                    this.messages = JSON.parse(saved);
+            async loadMessages() {
+                try {
+                    const response = await fetch(this.apiUrl + '/latest');
+                    const data = await response.json();
+                    this.messages = data.record?.messages || [];
+                } catch (error) {
+                    const saved = localStorage.getItem('messages');
+                    this.messages = saved ? JSON.parse(saved) : [];
                 }
-            }
-
-            startPolling() {
-                setInterval(() => {
-                    const saved = localStorage.getItem(this.storageKey);
-                    if (saved) {
-                        const newMessages = JSON.parse(saved);
-                        if (newMessages.length !== this.messages.length) {
-                            this.messages = newMessages;
-                            this.render();
-                        }
-                    }
-                }, 2000);
+                this.render();
             }
 
             render() {
@@ -158,7 +153,7 @@
             }
         }
 
-        new VKStyleChat();
+        new MessageFast();
     </script>
 </body>
 </html>
